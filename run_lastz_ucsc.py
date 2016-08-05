@@ -20,32 +20,9 @@ def path_leaf(path):
     return head, tail
 
 def exc_handler(tries_remaining, exception, delay):
-    """Example exception handler; prints a warning to stderr.
-    tries_remaining: The number of tries remaining.
-    exception: The exception instance which was raised.
-    """
     sys.stderr.write("Caught {}, {} tries remaining, sleeping for {} seconds".format(exception, tries_remaining, delay))
 
-
 def retries(max_tries, delay=1, backoff=2, exceptions=(Exception,), hook=None):
-    """Function decorator implementing retrying logic.
-    delay: Sleep this many seconds * backoff * try number after failure
-    backoff: Multiply delay by this factor after each failure
-    exceptions: A tuple of exception classes; default (Exception,)
-    hook: A function with the signature myhook(tries_remaining, exception);
-          default None
-    The decorator will call the function up to max_tries times if it raises
-    an exception.
-    By default it catches instances of the Exception class and subclasses.
-    This will recover after all but the most fatal errors. You may specify a
-    custom tuple of exception classes with the 'exceptions' argument; the
-    function will only be retried if it raises one of the specified
-    exceptions.
-    Additionally you may specify a hook function which will be called prior
-    to retrying with the number of remaining tries and the exception instance;
-    see given example. This is primarily intended to give the opportunity to
-    log the failure. Hook is not called after failure if no retries remain.
-    """
     def dec(func):
         def f2(*args, **kwargs):
             mydelay = delay
@@ -85,6 +62,12 @@ mkdir -p psl {tmpDir}
 {BIN_DIR}/blastz-run-ucsc {TARGET} {QUERY} {DEF_FILE} psl/{out_filename}.psl.gz -outFormat psl -gz
 """
 
+@retries(10, delay=60, hook=exc_handler)
+def make_submission(job_command):
+    output = subprocess.getoutput(job_command)
+    if 'submit error' in output:
+        raise Exception('Error with job {}'.format(job_command))
+    return output
 WORK_DIR='/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_2bit_parallel_ucsc'
 DEF_FILE='/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_2bit_parallel_ucsc/DEF_FILE'
 BIN_DIR='/home/cmb-panasas2/skchoudh/multizscripts/scripts'
@@ -92,12 +75,6 @@ TMP_DIR='/staging/as/skchoudh/scratch'
 lastzParams='O=400 E=30 H=2000 L=2200 K=3000'
 
 
-@retries(10, delay=60, hook=exc_handler)
-def make_submission(job_command):
-    output = subprocess.getoutput(job_command)
-    if 'submit error' in output:
-        raise Exception('Error with job {}'.format(job_command))
-    return output
 
 
 def walk_files(target_file, query_file):

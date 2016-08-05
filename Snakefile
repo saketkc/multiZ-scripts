@@ -1,17 +1,6 @@
-import glob, os
-
-BINDIR = 'bin'
-TARGET = 'galGal4'
-QUERY = 'mm10'
-
-GENOMES = [TARGET, QUERY]
-TARGET_CHUNK = '10000000'
-TARGET_LAP = '10000'
-TARGET_LIMIT = '300'
-
-QUERY_CHUNK = '20000000'
-QUERY_LAP = '0'
-QUERY_LIMIT = '300'
+include:
+    "config.py",
+    "helpers.py"
 
 rule all:
     input: 
@@ -20,7 +9,6 @@ rule all:
         expand('processed_data/{genome}/{genome}.lst', genome=GENOMES),
         expand('processed_data/{genome}/{genome}PartList/part000.2bit',  genome=QUERY),
         expand('processed_data/{genome}/{genome}PartList/part000.2bit',  genome=TARGET)
-        #expand('processed_data/{genome}PartList', genome=GENOMES)
 
 rule download_2bit:
     output: expand('raw_data/{genome}.2bit', genome=GENOMES)
@@ -60,15 +48,6 @@ rule create_query_partitions:
         '{BINDIR}/partitionSequence.pl {QUERY_CHUNK} {QUERY_LAP} '
         '{input[0]} {input[1]} {QUERY_LIMIT} '
         '-lstDir {output[0]} > {output[1]}'
-
-
-def get_partlst_files(genome):
-    return glob.glob('processed_data/{}/{}PartList/*.lst'.format(genome, genome))
-
-def get_partlst_filenames(genome):
-    filelist = list(map(os.path.basename, get_partlst_files(genome)))
-    filelist = [os.path.splitext(f)[0] for f in filelist]
-    return filelist
 
 rule create_query_lst_files:
     input: get_partlst_files(QUERY)
