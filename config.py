@@ -1,3 +1,5 @@
+PYENV = 'py35'
+
 TARGET = 'galGal4'
 QUERY = 'geoFor1'
 

@@ -1,14 +1,27 @@
 include:
-    "config.py",
-    "helpers.py"
+    "config.py"
+
+import glob
+import os
+
+def get_partlst_files(genome):
+    return glob.glob('processed_data/{}/{}PartList/*.lst'.format(genome, genome))
+
+def get_partlst_filenames(genome):
+    filelist = list(map(os.path.basename, get_partlst_files(genome)))
+    filelist = [os.path.splitext(f)[0] for f in filelist]
+    return filelist
 
 rule all:
-    input: 
+    input:
         expand('raw_data/{genome}.2bit', genome=GENOMES),
         expand('processed_data/{genome}/{genome}.chrom.sizes', genome=GENOMES),
         expand('processed_data/{genome}/{genome}.lst', genome=GENOMES),
         expand('processed_data/{genome}/{genome}PartList/part000.2bit',  genome=QUERY),
         expand('processed_data/{genome}/{genome}PartList/part000.2bit',  genome=TARGET)
+
+rule install_requirements:
+    shell: 'source activate {PYENV} & conda install -y {REQUIREMENTS}'
 
 rule download_2bit:
     output: expand('raw_data/{genome}.2bit', genome=GENOMES)
