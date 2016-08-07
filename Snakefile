@@ -59,10 +59,10 @@ def make_submission(job_command):
 rule all:
     input:
         expand('raw_data/{genome}.2bit', genome=GENOMES),
-        expand('processed_data/{target}VS{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
-        expand('processed_data/{target}VS{query}/{genome}.lst', genome=GENOMES, target=TARGET, query=QUERY),
-        expand('processed_data/{target}VS{query}/{genome}PartList/part000.2bit',  genome=QUERY, target=TARGET, query=QUERY),
-        expand('processed_data/{target}VS{query}/{genome}PartList/part000.2bit',  genome=TARGET, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{genome}.lst', genome=GENOMES, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{genome}PartList/part000.2bit',  genome=QUERY, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{genome}PartList/part000.2bit',  genome=TARGET, target=TARGET, query=QUERY),
 
 rule install_requirements:
     shell: 'source activate {PYENV} & conda install -y {REQUIREMENTS}'
@@ -77,7 +77,7 @@ rule create_chrominfo:
     input:
         expand('raw_data/{genome}.2bit', genome=GENOMES)
     output:
-        expand('processed_data/{target}VS{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
     run:
         for index, genome in enumerate(GENOMES):
             input_f = input[index]
@@ -87,33 +87,33 @@ rule create_chrominfo:
 rule create_target_partitions:
     input:
         'raw_data/{TARGET}.2bit',
-        'processed_data/{TARGET}VS{QUERY}/{TARGET}.chrom.sizes'
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.chrom.sizes'
     output:
-        'processed_data/{TARGET}VS{QUERY}/{TARGET}PartList/',
-        'processed_data/{TARGET}VS{QUERY}/{TARGET}.lst'
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/',
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst'
     shell:
-        '{BINDIR}/partitionSequence.pl {TARGET_CHUNK} {TARGET_LAP} '
+        '{BIN_DIR}/partitionSequence.pl {TARGET_CHUNK} {TARGET_LAP} '
         '{input[0]} {input[1]} {TARGET_LIMIT} '
         '-lstDir {output[0]} > {output[1]}'
 
 rule create_query_partitions:
     input:
         'raw_data/{QUERY}.2bit',
-        'processed_data/{TARGET}VS{QUERY}/{QUERY}.chrom.sizes'
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.chrom.sizes'
     output:
-        'processed_data/{TARGET}VS{QUERY}/{QUERY}PartList/',
-        'processed_data/{TARGET}VS{QUERY}/{QUERY}.lst'
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/',
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst'
     shell:
-        '{BINDIR}/partitionSequence.pl {QUERY_CHUNK} {QUERY_LAP} '
+        '{BIN_DIR}/partitionSequence.pl {QUERY_CHUNK} {QUERY_LAP} '
         '{input[0]} {input[1]} {QUERY_LIMIT} '
         '-lstDir {output[0]} > {output[1]}'
 
 rule create_query_lst_files:
     input: get_partlst_files(QUERY)
     params:
-        query='processed_data/{TARGET}VS{QUERY}/{QUERY}PartList',
+        query='processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList',
     output:
-        expand('processed_data/{target}VS{query}/{query}PartList/{sample}.2bit',
+        expand('processed_data/{target}_VS_{query}/{query}PartList/{sample}.2bit',
                query=QUERY,
                target=TARGET,
                sample=get_partlst_filenames(QUERY))
@@ -125,9 +125,9 @@ rule create_query_lst_files:
 rule create_target_lst_files:
     input: get_partlst_files(TARGET)
     params:
-        target='processed_data/{TARGET}VS{QUERY}/{TARGET}PartList',
+        target='processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList',
     output:
-        expand('processed_data/{target}VS{query}/{target}PartList/{sample}.2bit',
+        expand('processed_data/{target}_VS_{query}/{target}PartList/{sample}.2bit',
                query=QUERY,
                target=TARGET,
                sample=get_partlst_filenames(TARGET))
@@ -138,10 +138,10 @@ rule create_target_lst_files:
 
 rule create_psl:
     input:
-        'processed_data/{TARGET}VS{QUERY}/{TARGET}.lst',
-        'processed_data/{TARGET}VS{QUERY}/{QUERY}.lst'
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst',
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst'
     output:
-        'processed_data/{TARGET}VS{QUERY}/psl',
+        'processed_data/{TARGET}_VS_{QUERY}/psl',
     run:
         with open(input[0]) as t:
             for index1, tline in enumerate(t):
@@ -179,13 +179,13 @@ rule create_psl:
 
 rule chainer:
     input:
-        'processed_data/{TARGET}VS{QUERY}/{TARGET}.lst'
-    params: 
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst'
+    params:
         target_2bit='raw_data/{TARGET}.2bit',
         query_2bit='raw_data/{QUERY}.2bit',
     output:
-        dynamic('processed_data/'+TARGET'vs'+QUERY+'/chain/')
-    run: #'''for T in `cat ${input[0]} | sed -e "s#${WORKDIR}/##" | sed -e "s#galGal4PartList/##"`
+        dynamic('processed_data/'+TARGET+'vs'+QUERY+'/chain/')
+    run: #'''for T in `cat ${input[0]} | sed -e "s#${WORK_DIR}/##" | sed -e "s#${TARGET}PartList/##"`
         target_lines = open(input).readlines()
         for line in target_lines:
             line = line.strip()
