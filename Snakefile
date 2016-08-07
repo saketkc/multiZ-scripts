@@ -5,6 +5,7 @@ import glob
 import os
 
 WORK_DIR = srcdir('')
+PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
 
 def get_partlst_files(genome):
     return glob.glob('processed_data/{}/{}PartList/*.lst'.format(genome, genome))
@@ -61,8 +62,9 @@ rule all:
         expand('raw_data/{genome}.2bit', genome=GENOMES),
         expand('processed_data/{target}_VS_{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}.lst', genome=GENOMES, target=TARGET, query=QUERY),
-        expand('processed_data/{target}_VS_{query}/{genome}PartList/part000.2bit',  genome=QUERY, target=TARGET, query=QUERY),
-        expand('processed_data/{target}_VS_{query}/{genome}PartList/part000.2bit',  genome=TARGET, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{genome}PartList/', genome=QUERY, target=TARGET, query=QUERY),
+        dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit'),
+        dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit')
 
 rule install_requirements:
     shell: 'source activate {PYENV} & conda install -y {REQUIREMENTS}'
@@ -110,9 +112,9 @@ rule create_query_partitions:
 
 rule create_query_lst_files:
     input: get_partlst_files(QUERY)
-    params:
-        query='processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList',
     output:
+        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit'),
+        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit'),
         expand('processed_data/{target}_VS_{query}/{query}PartList/{sample}.2bit',
                query=QUERY,
                target=TARGET,
@@ -124,15 +126,15 @@ rule create_query_lst_files:
 
 rule create_target_lst_files:
     input: get_partlst_files(TARGET)
-    params:
-        target='processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList',
     output:
-        expand('processed_data/{target}_VS_{query}/{target}PartList/{sample}.2bit',
+        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit'),
+        expand('processed_data/{target}_VS_{query}/{query}PartList/{sample}.2bit',
                query=QUERY,
                target=TARGET,
                sample=get_partlst_filenames(TARGET))
     run:
         for tPart in input:
+            print(tPart)
             tPart = tPart.replace('.lst', '')
             shell('''sed -e 's#.*.2bit:##;' {tPart}.lst | twoBitToFa -seqList=stdin raw_data/{TARGET}.2bit stdout | faToTwoBit stdin {tPart}.2bit''')
 
