@@ -61,7 +61,6 @@ cd {WORK_DIR}
 mkdir -p psl {tmpDir}
 {BIN_DIR}/blastz-run-ucsc {TARGET} {QUERY} {DEF_FILE} psl/{out_filename}.psl.gz -outFormat psl -gz
 """
-
 @retries(10, delay=60, hook=exc_handler)
 def make_submission(job_command):
     output = subprocess.getoutput(job_command)
@@ -73,9 +72,6 @@ DEF_FILE='/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_2bit_parallel_ucsc/DEF_
 BIN_DIR='/home/cmb-panasas2/skchoudh/multizscripts/scripts'
 TMP_DIR='/staging/as/skchoudh/scratch'
 lastzParams='O=400 E=30 H=2000 L=2200 K=3000'
-
-
-
 
 def walk_files(target_file, query_file):
     index1 = 0
