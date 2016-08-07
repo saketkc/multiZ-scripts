@@ -7,7 +7,7 @@ DEF_FILE = './DEF_FILE'
 TARGET = 'galGal4'
 QUERY = 'geoFor1'
 
-BINDIR = './bin'
+BIN_DIR = './bin'
 
 GENOMES = [TARGET, QUERY]
 
@@ -54,11 +54,11 @@ cd {WORK_DIR}"""
 BLASTZ_TEMPLATE = TEMPLATE_HEADER + """
 mkdir -p psl
 {BIN_DIR}/blastz-run-ucsc {TARGET} {QUERY} {DEF_FILE} psl/{out_filename}.psl.gz -outFormat psl -gz
-""".format(BIN_DIR=BIN_DIR, PYENV=PYENV)
+"""
+#.format(BIN_DIR=BIN_DIR, PYENV=PYENV)
 
 CHAIN_TEMPLATE = TEMPLATE_HEADER +"""
-zcat psl/${psl_fileprefix}.*.psl.gz \
-| axtChain -psl -verbose=0 ${chainParams} \
-\tstdin ${TARGET} ${QUERY} stdout \
-| chainAntiRepeat ${TARGET} ${QUERY} stdin chain/${psl_fileprefix}.chain"
+zcat psl/{psl_fileprefix}.*.psl.gz \
+| axtChain -psl -verbose=0 {chainParams} stdin {TARGET} {QUERY} stdout \
+| chainAntiRepeat {TARGET} {QUERY} stdin chain/{psl_fileprefix}.chain
 """
