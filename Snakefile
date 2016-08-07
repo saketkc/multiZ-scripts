@@ -8,7 +8,7 @@ WORK_DIR = srcdir('')
 PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
 
 def get_partlst_files(genome):
-    return glob.glob('processed_data/{}/{}PartList/*.lst'.format(genome, genome))
+    return glob.glob('processed_data/{}_VS_{}/{}PartList/*.lst'.format(TARGET, QUERY, genome))
 
 def get_partlst_filenames(genome):
     filelist = list(map(os.path.basename, get_partlst_files(genome)))
@@ -63,8 +63,18 @@ rule all:
         expand('processed_data/{target}_VS_{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}.lst', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList/', genome=QUERY, target=TARGET, query=QUERY),
-        dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit'),
-        dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit')
+        #'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.partlst'
+        #'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.partlst'
+        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.lst'),
+        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.lst'),
+        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit'),
+        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit'),
+        #expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/filelist.txt', TARGET=TARGET, QUERY=QUERY),
+        #expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/filelist.txt', TARGET=TARGET, QUERY=QUERY)
+        expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}.partlst', TARGET=TARGET, QUERY=QUERY),
+        expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}.partlst', TARGET=TARGET, QUERY=QUERY)
+
+
 
 rule install_requirements:
     shell: 'source activate {PYENV} & conda install -y {REQUIREMENTS}'
@@ -87,56 +97,88 @@ rule create_chrominfo:
             shell('twoBitInfo {input_f} stdout | sort -k2nr > {output_f}')
 
 rule create_target_partitions:
+    priority: 2
     input:
         'raw_data/{TARGET}.2bit',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.chrom.sizes'
     output:
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/',
-        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst'
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst',
+        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.lst')
     shell:
         '{BIN_DIR}/partitionSequence.pl {TARGET_CHUNK} {TARGET_LAP} '
         '{input[0]} {input[1]} {TARGET_LIMIT} '
         '-lstDir {output[0]} > {output[1]}'
 
 rule create_query_partitions:
+    priority: 2
     input:
         'raw_data/{QUERY}.2bit',
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.chrom.sizes'
     output:
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/',
-        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst'
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst',
+        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.lst')
     shell:
         '{BIN_DIR}/partitionSequence.pl {QUERY_CHUNK} {QUERY_LAP} '
         '{input[0]} {input[1]} {QUERY_LIMIT} '
         '-lstDir {output[0]} > {output[1]}'
 
-rule create_query_lst_files:
-    input: get_partlst_files(QUERY)
-    output:
-        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit'),
-        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit'),
-        expand('processed_data/{target}_VS_{query}/{query}PartList/{sample}.2bit',
-               query=QUERY,
-               target=TARGET,
-               sample=get_partlst_filenames(QUERY))
-    run:
-        for qPart in input:
-            qPart = qPart.replace('.lst', '')
-            shell('''sed -e 's#.*.2bit:##;' {qPart}.lst | twoBitToFa -seqList=stdin raw_data/{QUERY}.2bit stdout | faToTwoBit stdin {qPart}.2bit''')
-
 rule create_target_lst_files:
-    input: get_partlst_files(TARGET)
+    priority: 1
+    input:
+        get_partlst_files(TARGET),
+#        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst'
+
     output:
-        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit'),
+        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit')
+        #'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.partlst',
+        expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}.partlst', TARGET=TARGET, QUERY=QUERY),
         expand('processed_data/{target}_VS_{query}/{query}PartList/{sample}.2bit',
                query=QUERY,
                target=TARGET,
                sample=get_partlst_filenames(TARGET))
+
     run:
-        for tPart in input:
-            print(tPart)
+        for tPart in input[:-1]:
+            #print(tPart)
             tPart = tPart.replace('.lst', '')
             shell('''sed -e 's#.*.2bit:##;' {tPart}.lst | twoBitToFa -seqList=stdin raw_data/{TARGET}.2bit stdout | faToTwoBit stdin {tPart}.2bit''')
+            shell('''touch {output[0]}''')
+
+rule create_query_lst_files:
+    priority: 1
+    input:
+        get_partlst_files(QUERY),
+        #'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst'
+    output:
+        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit')
+        #'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.partlst',
+        expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}.partlst', TARGET=TARGET, QUERY=QUERY),
+        expand('processed_data/{target}_VS_{query}/{query}PartList/{sample}.2bit',
+               query=QUERY,
+               target=TARGET,
+               sample=get_partlst_filenames(QUERY)),
+    run:
+        for qPart in input[:-1]:
+            qPart = qPart.replace('.lst', '')
+            shell('''sed -e 's#.*.2bit:##;' {qPart}.lst | twoBitToFa -seqList=stdin raw_data/{QUERY}.2bit stdout | faToTwoBit stdin {qPart}.2bit''')
+            shell('''touch {output[0]}''')
+"""
+rule dummy_query:
+    input:
+       dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.2bit')
+    output:
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/filelist.txt',
+    shell: 'ls ${input} > ${output}'
+
+rule dummy_target:
+    input:
+        dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit')
+    output:
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/filelist.txt',
+    shell: 'ls ${input} > ${output}'
+"""
 
 rule create_psl:
     input:
@@ -186,7 +228,7 @@ rule chainer:
         target_2bit='raw_data/{TARGET}.2bit',
         query_2bit='raw_data/{QUERY}.2bit',
     output:
-        dynamic('processed_data/'+TARGET+'vs'+QUERY+'/chain/')
+        'processed_data/'+TARGET+'vs'+QUERY+'/chain/'
     run: #'''for T in `cat ${input[0]} | sed -e "s#${WORK_DIR}/##" | sed -e "s#${TARGET}PartList/##"`
         target_lines = open(input).readlines()
         for line in target_lines:
