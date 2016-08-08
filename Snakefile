@@ -181,19 +181,18 @@ rule create_psl:
 
                         touch(error_log)
                         touch(output_log)
-                        open(job_script, 'w').write(BLASTZ_TEMPLATE.format(tmpDir=TMP_DIR,
-                                                                    WORK_DIR=WORK_DIR,
-                                                                    TARGET=target,
-                                                                    QUERY=query,
-                                                                    TNAME=tname,
-                                                                    QNAME=qname,
-                                                                    lastzParams=lastzParams,
+                        open(job_script, 'w').write(BLASTZ_TEMPLATE.format(
                                                                     error_log=error_log,
                                                                     output_log=output_log,
-                                                                    out_filename='{}.{}'.format(tname, qname),
+                                                                    name='lastz_{}'.format(job_name),
+                                                                    PATH=PATH,
+                                                                    PYENV=PYENV,
+                                                                    WORK_DIR=WORK_DIR,
                                                                     BIN_DIR=BIN_DIR,
-                                                                    DEF_FILE=DEF_FILE,
-                                                                    name='lastz_{}'.format(job_name)
+                                                                    TARGET=target,
+                                                                    QUERY=query,
+                                                                    DEF_FILE=WORK_DIR+'/'+DEF_FILE,
+                                                                    out_filename='{}.{}'.format(tname, qname),
                                                                     ))
                         output = make_submission('qsub {}'.format(job_script))
 
