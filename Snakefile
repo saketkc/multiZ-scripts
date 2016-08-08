@@ -1,6 +1,7 @@
 include:
     "config.py"
 
+import errno
 import glob
 import os
 import ntpath
@@ -10,6 +11,14 @@ PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
 PREFIX_OUT_QUERY = PREFIX_OUT + '/' + QUERY
 PREFIX_OUT_TARGET = PREFIX_OUT + '/' + TARGET
 
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
 
 def get_partlst_files(genome):
     return glob.glob('processed_data/{}_VS_{}/{}PartList/*.lst'.format(TARGET, QUERY, genome))
@@ -151,6 +160,9 @@ rule create_psl:
     output:
         'processed_data/{TARGET}_VS_{QUERY}/psl',
     run:
+        mkdir_p(os.path.join(WORK_DIR, 'jobs'))
+        mkdir_p(os.path.join(WORK_DIR, 'logs'))
+
         with open(input[0]) as t:
             for index1, tline in enumerate(t):
                 tline = tline.strip()
