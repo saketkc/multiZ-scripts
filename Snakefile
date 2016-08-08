@@ -3,6 +3,7 @@ include:
 
 import glob
 import os
+import ntpath
 
 WORK_DIR = srcdir('')
 PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
