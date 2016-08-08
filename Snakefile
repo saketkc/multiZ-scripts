@@ -69,6 +69,8 @@ rule all:
         expand('processed_data/{target}_VS_{query}/{genome}PartList/', genome=QUERY, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList_2bit/', genome=TARGET, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList_2bit/', genome=QUERY, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/psl', target=TARGET, query=QUERY),
+
 
 rule install_requirements:
     shell: 'source activate {PYENV} & conda install -y {REQUIREMENTS}'
@@ -137,6 +139,70 @@ rule create_query_lst_files:
             qPart = qPart.replace('.lst', '')
             shell('''sed -e 's#.*.2bit:##;' {qPart}.lst | twoBitToFa -seqList=stdin raw_data/{QUERY}.2bit stdout | faToTwoBit stdin {qPart}.2bit''')
             shell('''mkdir -p {output} && mv processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/*.2bit {output}''')
+
+
+rule create_psl:
+    input:
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst',
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst',
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList_2bit/',
+        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList_2bit/',
+    output:
+        'processed_data/{TARGET}_VS_{QUERY}/psl',
+    run:
+        with open(input[0]) as t:
+            for index1, tline in enumerate(t):
+                tline = tline.strip()
+                with open(input[1]) as q:
+                    for index2, qline in enumerate(q):
+                        qline = qline.strip()
+                        target = tline
+                        query = qline
+                        _, tname  = path_leaf(target)
+                        _, qname = path_leaf(query)
+                        job_name = '{}-{}'.format(index1, index2)
+
+                        job_script = os.path.join(WORK_DIR, 'jobs', '{}-{}.sh'.format(index1, index2))
+                        error_log = os.path.join(WORK_DIR, 'logs', '{}-{}.e'.format(index1, index2))
+                        output_log = os.path.join(WORK_DIR, 'logs', '{}-{}.o'.format(index1, index2))
+
+                        touch(error_log)
+                        touch(output_log)
+                        open(job_script, 'w').write(BLASTZ_TEMPLATE.format(tmpDir=TMP_DIR,
+                                                                    WORK_DIR=WORK_DIR,
+                                                                    TARGET=target,
+                                                                    QUERY=query,
+                                                                    TNAME=tname,
+                                                                    QNAME=qname,
+                                                                    lastzParams=lastzParams,
+                                                                    error_log=error_log,
+                                                                    output_log=output_log,
+                                                                    out_filename='{}.{}'.format(tname, qname),
+                                                                    BIN_DIR=BIN_DIR,
+                                                                    DEF_FILE=DEF_FILE,
+                                                                    name='lastz_{}'.format(job_name)
+                                                                    ))
+                        output = make_submission('qsub {}'.format(job_script))
+
+rule chainer:
+    input:
+        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst'
+        'processed_data/{TARGET}_VS_{QUERY}/psl',
+    output:
+        'processed_data/{TARGET}_VS_{QUERY}/chain',
+    run: #'''for T in `cat ${input[0]} | sed -e "s#${WORK_DIR}/##" | sed -e "s#${TARGET}PartList/##"`
+        target_lines = open(input).readlines()
+        for line in target_lines:
+            line = line.strip()
+            line = line.replace(WORK_DIR, '').replace('{}PartList/'.format(TARGET), '')
+            job_name = '{}-{}'.format(line)
+            job_script = os.path.join(WORK_DIR, 'jobs', '{}-{}.sh'.format(index1, index2))
+            open(job_script, 'w').write(psl_fileprefix=line, 
+                                        target=params['target_2bit'],
+                                        query=params['query_2bit'])
+
+            output = make_submission('qsub {}'.format(job_script))
+
 rule clean:
     shell:
         'rm -rf processed_data'
