@@ -94,15 +94,9 @@ rule create_target_partitions:
     input:
         'raw_data/{TARGET}.2bit',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.chrom.sizes'
-    params:
-        out_lst_file=expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst', TARGET=TARGET, QUERY=QUERY),
-        out_lst_dir=expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/', TARGET=TARGET, QUERY=QUERY),
     output:
-        #'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/{partn}.lst',
-        ##'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/',
-        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.lst')
     shell:
         '{BIN_DIR}/partitionSequence.pl {TARGET_CHUNK} {TARGET_LAP} '
         '{input[0]} {input[1]} {TARGET_LIMIT} '
@@ -112,15 +106,9 @@ rule create_query_partitions:
     input:
         'raw_data/{QUERY}.2bit',
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.chrom.sizes'
-    params:
-        out_lst_file=expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst', TARGET=TARGET, QUERY=QUERY),
-        out_lst_dir=expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/', TARGET=TARGET, QUERY=QUERY)
     output:
-        #'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/{partn}.lst',
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst',
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/',
-        #PREFIX_OUT_QUERY+'PartList/{part,}.lst'
-        #dynamic(PREFIX_OUT+'/'+QUERY+'PartList/{partn}.lst')
     shell:
         '{BIN_DIR}/partitionSequence.pl {QUERY_CHUNK} {QUERY_LAP} '
         '{input[0]} {input[1]} {QUERY_LIMIT} '
@@ -130,28 +118,15 @@ rule create_target_lst_files:
     input:
         get_partlst_files(TARGET),
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst'
-        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.lst')
-    params:
-        output=expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}.partlst', TARGET=TARGET, QUERY=QUERY)
     output:
-        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit')
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList_2bit/',
-        ##expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}.partlst', TARGET=TARGET, QUERY=QUERY),
-        #dynamic(PREFIX_OUT+'/'+TARGET+'PartList/{partn}.2bit')
-        ##expand('processed_data/{target}_VS_{query}/{query}PartList/{sample}.2bit',
-        ##       query=QUERY,
-        ##      target=TARGET,
-        ##       sample=get_partlst_filenames(TARGET))
-
     run:
         for tPart in input[:-1]:
-            #print(tPart)
             tPart = tPart.replace('.lst', '')
             shell('''sed -e 's#.*.2bit:##;' {tPart}.lst | twoBitToFa -seqList=stdin raw_data/{TARGET}.2bit stdout | faToTwoBit stdin {tPart}.2bit''')
-            shell('''mkdir -p processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList_2bit && mv processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/*.2bit {TARGET}PartList_2bit''')
+            shell('''mkdir -p {output} && mv processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList/*.2bit {output}''')
 
 rule create_query_lst_files:
-    priority: 1
     input:
         get_partlst_files(QUERY),
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst'
@@ -161,7 +136,7 @@ rule create_query_lst_files:
         for qPart in input[:-1]:
             qPart = qPart.replace('.lst', '')
             shell('''sed -e 's#.*.2bit:##;' {qPart}.lst | twoBitToFa -seqList=stdin raw_data/{QUERY}.2bit stdout | faToTwoBit stdin {qPart}.2bit''')
-            shell('''mkdir -p processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList_2bit && mv processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/*.2bit {TARGET}PartList_2bit''')
+            shell('''mkdir -p {output} && mv processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList/*.2bit {output}''')
 rule clean:
     shell:
         'rm -rf processed_data'
