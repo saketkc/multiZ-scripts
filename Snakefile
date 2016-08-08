@@ -5,6 +5,10 @@ import errno
 import glob
 import os
 import ntpath
+import random
+import string
+import subprocess
+from time import sleep
 
 WORK_DIR = srcdir('')
 PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
