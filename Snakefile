@@ -221,6 +221,11 @@ rule chainer:
 
             output = make_submission('qsub {}'.format(job_script))
 
-rule clean:
+rule clean_all:
     shell:
-        'rm -rf processed_data'
+        'rm -rf processed_data jobs logs psl chain'
+
+rule clean_data:
+    shell:
+        'rm -rf jobs logs psl chain'
+
