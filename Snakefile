@@ -11,6 +11,8 @@ import subprocess
 from time import sleep
 
 WORK_DIR = srcdir('')
+BIN_DIR = os.path.abspath(BIN_DIR)
+
 PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
 PREFIX_OUT_QUERY = PREFIX_OUT + '/' + QUERY
 PREFIX_OUT_TARGET = PREFIX_OUT + '/' + TARGET
