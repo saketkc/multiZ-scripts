@@ -5,10 +5,9 @@ BLASTZ_H=2000
 BLASTZ_L=2200
 BLASTZ_K=3000
 
-SEQ1_DIR=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_2bit/galGal4.2bit
-SEQ1_LEN=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_2bit/galGal4.chrom.sizes
-
-SEQ2_DIR=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_2bit/geoFor1.2bit
-SEQ2_LEN=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_2bit/geoFor1.chrom.sizes
+SEQ1_DIR=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_snakemake
+SEQ1_LEN=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_snakemake/processed_data/galGal4_VS_geoFor1/galGal4.chrom.sizes
+SEQ2_DIR=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_snakemake
+SEQ2_LEN=/home/cmb-panasas2/skchoudh/galGal4_vs_geoFor1_snakemake/processed_data/galGal4_VS_geoFor1/geoFor1.chrom.sizes
 
 TMPDIR=/staging/as/skchoudh
