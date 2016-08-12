@@ -69,7 +69,7 @@ def retries(max_tries, delay=1, backoff=2, exceptions=(Exception,), hook=None):
         return f2
     return dec
 
-@retries(10, delay=60, hook=exc_handler)
+@retries(20, delay=100, hook=exc_handler)
 def make_submission(job_command):
     output = subprocess.getoutput(job_command)
     if 'submit error' in output:
