@@ -46,7 +46,7 @@ TEMPLATE_HEADER = """#PBS -S /bin/bash
 #PBS -l nodes=1:ppn=1
 #PBS -l walltime=00:30:00
 #PBS -N {name}
-set -eou pipefail
+#set -eou pipefail
 export PATH={PATH}
 source activate {PYENV}
 cd {WORK_DIR}"""
