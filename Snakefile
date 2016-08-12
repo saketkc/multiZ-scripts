@@ -26,6 +26,40 @@ def mkdir_p(path):
         else:
             raise
 
+def create_def_file(blastz_o=400,
+                    blastz_e=30,
+                    blastz_h=2000,
+                    blastz_l=2200,
+                    blastz_k=3000
+                    seq1_dir,
+                    seq1_lem:
+                    ):
+    def_file_template = """
+    BLASTZ=lastz
+    BLASTZ_O={blastz_o}
+    BLASTZ_E={blastz_e}
+    BLASTZ_H={blastz_h}
+    BLASTZ_L={blastz_l}
+    BLASTZ_K={blastz_k}
+
+    SEQ1_DIR={seq1_dir}
+    SEQ1_LEN={seq1_len}
+    SEQ2_DIR={seq2_dir}
+    SEQ2_LEN={seq2_len}
+
+    TMPDIR=/staging/as/skchoudh
+    """.format(blastz_o=blastz_o,
+               blastz_e=blastz_e,
+               blastz_h=blastz_h,
+               blastz_l=blastz_l,
+               blastz_k=blastz_k,
+               seq1_dir=seq1_dir,
+               seq1_len=seq1_len,
+               seq2_dir=seq2_dir,
+               seq2_len=seq2_len,
+              )
+
+
 def get_partlst_files(genome):
     return glob.glob('processed_data/{}_VS_{}/{}PartList/*.lst'.format(TARGET, QUERY, genome))
 
