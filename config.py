@@ -44,7 +44,7 @@ TEMPLATE_HEADER = """#PBS -S /bin/bash
 #PBS -l pmem=10G
 #PBS -l mem=10G
 #PBS -l nodes=1:ppn=1
-#PBS -l walltime=00:30:00
+#PBS -l walltime=3:30:00
 #PBS -N {name}
 #set -eou pipefail
 export PATH={PATH}
