@@ -30,9 +30,11 @@ def create_def_file(blastz_o=400,
                     blastz_e=30,
                     blastz_h=2000,
                     blastz_l=2200,
-                    blastz_k=3000
-                    seq1_dir,
-                    seq1_lem:
+                    blastz_k=3000,
+                    seq1_dir=None,
+                    seq1_len=None,
+                    seq2_dir=None,
+                    seq2_len=None
                     ):
     def_file_template = """
     BLASTZ=lastz
