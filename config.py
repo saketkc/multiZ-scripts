@@ -34,7 +34,9 @@ REQUIREMENTS = ['ucsc-axtchain',
                 'ucsc-nettoaxt',
                 'ucsc-pslcheck',
                 'ucsc-twobitinfo',
-                'ucsc-twobittofa']
+                'ucsc-twobittofa',
+                'ucsc-fafrag',
+                'ucsc-fasize']
 
 TEMPLATE_HEADER = """#PBS -S /bin/bash
 #PBS -q cmb
@@ -44,7 +46,7 @@ TEMPLATE_HEADER = """#PBS -S /bin/bash
 #PBS -l pmem=10G
 #PBS -l mem=10G
 #PBS -l nodes=1:ppn=1
-#PBS -l walltime=2:00:00
+#PBS -l walltime=12:00:00
 #PBS -N {name}
 #set -eou pipefail
 export PATH={PATH}
