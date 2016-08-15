@@ -1,0 +1,14 @@
+
+BLASTZ=lastz
+BLASTZ_O=400
+BLASTZ_E=30
+BLASTZ_H=2000
+BLASTZ_L=2200
+BLASTZ_K=3000
+
+SEQ1_DIR=/panfs/cmb-panasas2/skchoudh/multiZ-scripts/
+SEQ1_LEN=/panfs/cmb-panasas2/skchoudh/multiZ-scripts/processed_data/galGal4_VS_geoFor1/galGal4.chrom.sizes
+SEQ2_DIR=/panfs/cmb-panasas2/skchoudh/multiZ-scripts/
+SEQ2_LEN=/panfs/cmb-panasas2/skchoudh/multiZ-scripts/processed_data/galGal4_VS_geoFor1/geoFor1.chrom.sizes
+
+TMPDIR=/staging/as/skchoudh
