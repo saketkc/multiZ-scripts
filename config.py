@@ -1,13 +1,15 @@
 PYENV = 'py35'
 
-PATH = '/home/cmb-panasas2/skchoudh/software_frozen/anaconda2/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin'
-
-DEF_FILE = './DEF_FILE'
+PATH = '/home/cmb-panasas3/skchoudh/software_frozen/anaconda2/bin:/home/cmb-panasas2/skchoudh/software_frozen/phast-1.4/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin'
 
 TARGET = 'galGal4'
 QUERY = 'geoFor1'
 
-BIN_DIR = './bin'
+BLASTZ_O=400
+BLASTZ_E=30
+BLASTZ_H=2000
+BLASTZ_L=2200
+BLASTZ_K=3000
 
 GENOMES = [TARGET, QUERY]
 
@@ -18,6 +20,8 @@ TARGET_LIMIT = '300'
 QUERY_CHUNK = '20000000'
 QUERY_LAP = '0'
 QUERY_LIMIT = '300'
+
+BIN_DIR = './bin'
 
 REQUIREMENTS = ['ucsc-axtchain',
                 'ucsc-axttomaf',
@@ -64,3 +68,6 @@ zcat psl/{psl_fileprefix}.*.psl.gz \
 | axtChain -psl -verbose=0 {chainParams} stdin {TARGET} {QUERY} stdout \
 | chainAntiRepeat {TARGET} {QUERY} stdin chain/{psl_fileprefix}.chain
 """
+
+
+
