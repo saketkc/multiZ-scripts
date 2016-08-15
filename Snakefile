@@ -1,5 +1,5 @@
 include:
-    "config.py"
+    "config/config.py"
 
 import errno
 import glob
@@ -109,7 +109,7 @@ def make_submission(job_command):
 rule all:
     input:
         expand('raw_data/{genome}.2bit', genome=GENOMES),
-        'DEF_FILE',
+        'config/DEF_FILE',
         expand('processed_data/{target}_VS_{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}.lst', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList/', genome=TARGET, target=TARGET, query=QUERY),
@@ -140,9 +140,11 @@ rule create_chrominfo:
             shell('twoBitInfo {input_f} stdout | sort -k2nr > {output_f}')
 
 rule create_DEF_FILE:
-    output: 'DEF_FILE'
+    output: 'config/DEF_FILE'
     run:
-        with open(output, 'w') as f:
+        print(output[0])
+        print(def_file_template)
+        with open(output[0], 'w') as f:
             f.write(def_file_template)
 
 rule create_target_partitions:
@@ -196,7 +198,7 @@ rule create_query_lst_files:
 
 rule create_psl:
     input:
-        'DEF_FILE',
+        'config/DEF_FILE',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst',
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList_2bit/',
