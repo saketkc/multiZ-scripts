@@ -16,6 +16,10 @@ BIN_DIR = os.path.abspath(BIN_DIR)
 PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
 PREFIX_OUT_QUERY = PREFIX_OUT + '/' + QUERY
 PREFIX_OUT_TARGET = PREFIX_OUT + '/' + TARGET
+SEQ1_DIR = WORK_DIR
+SEQ2_DIR = WORK_DIR
+SEQ1_LEN = srcdir('processed_data/{}_VS_{}/{}.chrom.sizes'.format(TARGET, QUERY, TARGET))
+SEQ2_LEN = srcdir('processed_data/{}_VS_{}/{}.chrom.sizes'.format(TARGET, QUERY, QUERY))
 
 def mkdir_p(path):
     try:
@@ -26,40 +30,30 @@ def mkdir_p(path):
         else:
             raise
 
-def create_def_file(blastz_o=400,
-                    blastz_e=30,
-                    blastz_h=2000,
-                    blastz_l=2200,
-                    blastz_k=3000,
-                    seq1_dir=None,
-                    seq1_len=None,
-                    seq2_dir=None,
-                    seq2_len=None
-                    ):
-    def_file_template = """
-    BLASTZ=lastz
-    BLASTZ_O={blastz_o}
-    BLASTZ_E={blastz_e}
-    BLASTZ_H={blastz_h}
-    BLASTZ_L={blastz_l}
-    BLASTZ_K={blastz_k}
+def_file_template = """
+BLASTZ=lastz
+BLASTZ_O={blastz_o}
+BLASTZ_E={blastz_e}
+BLASTZ_H={blastz_h}
+BLASTZ_L={blastz_l}
+BLASTZ_K={blastz_k}
 
-    SEQ1_DIR={seq1_dir}
-    SEQ1_LEN={seq1_len}
-    SEQ2_DIR={seq2_dir}
-    SEQ2_LEN={seq2_len}
+SEQ1_DIR={seq1_dir}
+SEQ1_LEN={seq1_len}
+SEQ2_DIR={seq2_dir}
+SEQ2_LEN={seq2_len}
 
-    TMPDIR=/staging/as/skchoudh
-    """.format(blastz_o=blastz_o,
-               blastz_e=blastz_e,
-               blastz_h=blastz_h,
-               blastz_l=blastz_l,
-               blastz_k=blastz_k,
-               seq1_dir=seq1_dir,
-               seq1_len=seq1_len,
-               seq2_dir=seq2_dir,
-               seq2_len=seq2_len,
-              )
+TMPDIR=/staging/as/skchoudh
+""".format(blastz_o=BLASTZ_O,
+           blastz_e=BLASTZ_E,
+           blastz_h=BLASTZ_H,
+           blastz_l=BLASTZ_L,
+           blastz_k=BLASTZ_K,
+           seq1_dir=SEQ1_DIR,
+           seq1_len=SEQ1_LEN,
+           seq2_dir=SEQ2_DIR,
+           seq2_len=SEQ2_LEN,
+          )
 
 
 def get_partlst_files(genome):
@@ -115,6 +109,7 @@ def make_submission(job_command):
 rule all:
     input:
         expand('raw_data/{genome}.2bit', genome=GENOMES),
+        'DEF_FILE',
         expand('processed_data/{target}_VS_{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}.lst', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList/', genome=TARGET, target=TARGET, query=QUERY),
@@ -143,6 +138,12 @@ rule create_chrominfo:
             input_f = input[index]
             output_f = output[index]
             shell('twoBitInfo {input_f} stdout | sort -k2nr > {output_f}')
+
+rule create_DEF_FILE:
+    output: 'DEF_FILE'
+    run:
+        with open(output, 'w') as f:
+            f.write(def_file_template)
 
 rule create_target_partitions:
     input:
@@ -195,6 +196,7 @@ rule create_query_lst_files:
 
 rule create_psl:
     input:
+        'DEF_FILE',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst',
         'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst',
         'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList_2bit/',
@@ -233,7 +235,7 @@ rule create_psl:
                                                                     BIN_DIR=BIN_DIR,
                                                                     TARGET=target,
                                                                     QUERY=query,
-                                                                    DEF_FILE=WORK_DIR+'/'+DEF_FILE,
+                                                                    DEF_FILE=input[0],
                                                                     out_filename='{}.{}'.format(tname, qname),
                                                                     ))
                         output = make_submission('qsub {}'.format(job_script))
