@@ -21,7 +21,7 @@ QUERY_CHUNK = '20000000'
 QUERY_LAP = '0'
 QUERY_LIMIT = '300'
 
-BIN_DIR = './bin'
+BIN_DIR = '../bin'
 
 REQUIREMENTS = ['ucsc-axtchain',
                 'ucsc-axttomaf',
