@@ -1,5 +1,5 @@
 include:
-    "config/config.py"
+    "config.py"
 
 import errno
 import glob
@@ -16,10 +16,6 @@ BIN_DIR = os.path.abspath(BIN_DIR)
 PREFIX_OUT = 'processed_data/{}_VS_{}'.format(TARGET, QUERY)
 PREFIX_OUT_QUERY = PREFIX_OUT + '/' + QUERY
 PREFIX_OUT_TARGET = PREFIX_OUT + '/' + TARGET
-SEQ1_DIR = WORK_DIR
-SEQ2_DIR = WORK_DIR
-SEQ1_LEN = srcdir('processed_data/{}_VS_{}/{}.chrom.sizes'.format(TARGET, QUERY, TARGET))
-SEQ2_LEN = srcdir('processed_data/{}_VS_{}/{}.chrom.sizes'.format(TARGET, QUERY, QUERY))
 
 def mkdir_p(path):
     try:
@@ -30,30 +26,40 @@ def mkdir_p(path):
         else:
             raise
 
-def_file_template = """
-BLASTZ=lastz
-BLASTZ_O={blastz_o}
-BLASTZ_E={blastz_e}
-BLASTZ_H={blastz_h}
-BLASTZ_L={blastz_l}
-BLASTZ_K={blastz_k}
+def create_def_file(blastz_o=400,
+                    blastz_e=30,
+                    blastz_h=2000,
+                    blastz_l=2200,
+                    blastz_k=3000,
+                    seq1_dir=None,
+                    seq1_len=None,
+                    seq2_dir=None,
+                    seq2_len=None
+                    ):
+    def_file_template = """
+    BLASTZ=lastz
+    BLASTZ_O={blastz_o}
+    BLASTZ_E={blastz_e}
+    BLASTZ_H={blastz_h}
+    BLASTZ_L={blastz_l}
+    BLASTZ_K={blastz_k}
 
-SEQ1_DIR={seq1_dir}
-SEQ1_LEN={seq1_len}
-SEQ2_DIR={seq2_dir}
-SEQ2_LEN={seq2_len}
+    SEQ1_DIR={seq1_dir}
+    SEQ1_LEN={seq1_len}
+    SEQ2_DIR={seq2_dir}
+    SEQ2_LEN={seq2_len}
 
-TMPDIR=/staging/as/skchoudh
-""".format(blastz_o=BLASTZ_O,
-           blastz_e=BLASTZ_E,
-           blastz_h=BLASTZ_H,
-           blastz_l=BLASTZ_L,
-           blastz_k=BLASTZ_K,
-           seq1_dir=SEQ1_DIR,
-           seq1_len=SEQ1_LEN,
-           seq2_dir=SEQ2_DIR,
-           seq2_len=SEQ2_LEN,
-          )
+    TMPDIR=/staging/as/skchoudh
+    """.format(blastz_o=blastz_o,
+               blastz_e=blastz_e,
+               blastz_h=blastz_h,
+               blastz_l=blastz_l,
+               blastz_k=blastz_k,
+               seq1_dir=seq1_dir,
+               seq1_len=seq1_len,
+               seq2_dir=seq2_dir,
+               seq2_len=seq2_len,
+              )
 
 
 def get_partlst_files(genome):
@@ -109,14 +115,18 @@ def make_submission(job_command):
 rule all:
     input:
         expand('raw_data/{genome}.2bit', genome=GENOMES),
-        'config/DEF_FILE',
         expand('processed_data/{target}_VS_{query}/{genome}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}.lst', genome=GENOMES, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList/', genome=TARGET, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList/', genome=QUERY, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList_2bit/', genome=TARGET, target=TARGET, query=QUERY),
         expand('processed_data/{target}_VS_{query}/{genome}PartList_2bit/', genome=QUERY, target=TARGET, query=QUERY),
+        expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList_2bit/', TARGET=TARGET, QUERY=QUERY),
         expand('processed_data/{target}_VS_{query}/psl', target=TARGET, query=QUERY),
+        #expand('processed_data/{target}_VS_{query}/chain',target=TARGET, query=QUERY),
+        'chain/',
+        'merged_chain/',
+        expand('merge_sort/{target}.{query}.pre.chain', target=TARGET, query=QUERY)
 
 
 rule install_requirements:
@@ -138,14 +148,6 @@ rule create_chrominfo:
             input_f = input[index]
             output_f = output[index]
             shell('twoBitInfo {input_f} stdout | sort -k2nr > {output_f}')
-
-rule create_DEF_FILE:
-    output: 'config/DEF_FILE'
-    run:
-        print(output[0])
-        print(def_file_template)
-        with open(output[0], 'w') as f:
-            f.write(def_file_template)
 
 rule create_target_partitions:
     input:
@@ -186,9 +188,9 @@ rule create_target_lst_files:
 rule create_query_lst_files:
     input:
         get_partlst_files(QUERY),
-        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst'
+        expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst', TARGET=TARGET, QUERY=QUERY)
     output:
-        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList_2bit/',
+        expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList_2bit/', TARGET=TARGET, QUERY=QUERY)
     run:
         for qPart in input[:-1]:
             qPart = qPart.replace('.lst', '')
@@ -198,13 +200,12 @@ rule create_query_lst_files:
 
 rule create_psl:
     input:
-        'config/DEF_FILE',
-        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst',
-        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst',
-        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList_2bit/',
-        'processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList_2bit/',
+        expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst', QUERY=QUERY, TARGET=TARGET),
+        expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}.lst',QUERY=QUERY, TARGET=TARGET),
+        expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}PartList_2bit/',QUERY=QUERY, TARGET=TARGET),
+        expand('processed_data/{TARGET}_VS_{QUERY}/{QUERY}PartList_2bit/',QUERY=QUERY, TARGET=TARGET),
     output:
-        'processed_data/{TARGET}_VS_{QUERY}/psl',
+        expand('processed_data/{target}_VS_{query}/psl', target=TARGET, query=QUERY),
     run:
         mkdir_p(os.path.join(WORK_DIR, 'jobs'))
         mkdir_p(os.path.join(WORK_DIR, 'logs'))
@@ -237,29 +238,91 @@ rule create_psl:
                                                                     BIN_DIR=BIN_DIR,
                                                                     TARGET=target,
                                                                     QUERY=query,
-                                                                    DEF_FILE=input[0],
+                                                                    DEF_FILE=WORK_DIR+'/'+DEF_FILE,
                                                                     out_filename='{}.{}'.format(tname, qname),
                                                                     ))
                         output = make_submission('qsub {}'.format(job_script))
 
 rule chainer:
     input:
-        'processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst'
-        'processed_data/{TARGET}_VS_{QUERY}/psl',
+        expand('processed_data/{TARGET}_VS_{QUERY}/{TARGET}.lst', TARGET=TARGET, QUERY=QUERY),
+        expand('processed_data/{TARGET}_VS_{QUERY}/psl', TARGET=TARGET, QUERY=QUERY),
+        expand('raw_data/{TARGET}.2bit', TARGET=TARGET),
+        expand('raw_data/{QUERY}.2bit', QUERY=QUERY)
     output:
-        'processed_data/{TARGET}_VS_{QUERY}/chain',
+      #  expand('processed_data/{target}_VS_{query}/chain',target=TARGET, query=QUERY),
+        'chain/'
     run: #'''for T in `cat ${input[0]} | sed -e "s#${WORK_DIR}/##" | sed -e "s#${TARGET}PartList/##"`
-        target_lines = open(input).readlines()
-        for line in target_lines:
+        target_lines = open(input[0]).readlines()
+        mkdir_p(os.path.join(WORK_DIR, 'chain-jobs'))
+        mkdir_p(os.path.join(WORK_DIR, 'chain-logs'))
+        mkdir_p(os.path.join(WORK_DIR, 'chain'))
+        for index, line in enumerate(target_lines):
             line = line.strip()
-            line = line.replace(WORK_DIR, '').replace('{}PartList/'.format(TARGET), '')
-            job_name = '{}-{}'.format(line)
-            job_script = os.path.join(WORK_DIR, 'jobs', '{}-{}.sh'.format(index1, index2))
-            open(job_script, 'w').write(psl_fileprefix=line, 
-                                        target=params['target_2bit'],
-                                        query=params['query_2bit'])
+            print(TARGET)
+            line = line.replace('raw_data/', '')
+            job_name = '{}'.format(line)
+            job_script = os.path.join(WORK_DIR, 'chain-jobs', '{}.sh'.format(index))
+            error_log = os.path.join(WORK_DIR, 'chain-logs', '{}.e'.format(index))
+            output_log = os.path.join(WORK_DIR, 'chain-logs', '{}.o'.format(index))
+
+            touch(error_log)
+            touch(output_log)
+            open(job_script, 'w').write(CHAIN_TEMPLATE.format(error_log=error_log,
+                                                              output_log=output_log,
+                                                              psl_dir=input[1],
+                                                              name='lastz_{}'.format(job_name),
+                                                              PATH=PATH,
+                                                              PYENV=PYENV,
+                                                              WORK_DIR=WORK_DIR,
+                                                              BIN_DIR=BIN_DIR,
+                                                              psl_fileprefix=line,
+                                                              chainParams=CHAIN_PARAMS,
+                                                              TARGET=input[2],
+                                                              QUERY=input[3]))
 
             output = make_submission('qsub {}'.format(job_script))
+
+rule chain_sort_merge:
+    input:
+        'chain/'
+    output:
+        expand('merge_sort/{target}.{query}.all.chain', target=TARGET, query=QUERY)
+    run:
+        shell('chainMergeSort {input}*.chain > {output}')
+
+rule chain_pre_net:
+    input:
+        expand('merge_sort/{target}.{query}.all.chain', target=TARGET, query=QUERY)
+        expand('processed_data/{target}_VS_{query}/{target}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{query}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+    output:
+        expand('merge_sort/{target}.{query}.pre.chain', target=TARGET, query=QUERY)
+    shell:
+        '''chainPreNet {input[0]} {input[1]} {input[2]} {output}'''
+
+rule create_net:
+    input:
+        expand('merge_sort/{target}.{query}.pre.chain', target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{target}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{query}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+    output:
+        expand('merge_sort/{target}.{query}.noClass.net', target=TARGET, query=QUERY)
+    shell:
+        '''chainNet {input[0]} -minSpace=1 {input[1]} {input[2]} tdout /dev/null | netSyntenic stdin {output}'''
+
+rule add_net_info:
+    input:
+        expand('merge_sort/{target}.{query}.pre.chain', target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{target}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+        expand('processed_data/{target}_VS_{query}/{query}.chrom.sizes', genome=GENOMES, target=TARGET, query=QUERY),
+        expand('merge_sort/{target}.{query}.noClass.net', target=TARGET, query=QUERY)
+    output:
+        expand('merge_sort/')
+    shell:
+        '''netClass -noAr  {target_db} {query_db} {output}'''
+
+
 
 rule clean_all:
     shell:
